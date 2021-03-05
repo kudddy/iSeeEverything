@@ -1,0 +1,15 @@
+aiohttp~=3.7.1
+aiohttp_apispec
+asyncpg~=0.22.0
+marshmallow~=3.8.0
+asyncpgsa~=0.27.1
+sqlalchemy~=1.3.20
+psycopg2-binary
+alembic~=1.4.3
+numpy~=1.19.2
+aiomcache~=0.6.0
+aiofiles~=0.6.0
+Pillow~=8.0.1
+cmake
+face-recognition
+dlib~=19.21.1
