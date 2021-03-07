@@ -1,5 +1,6 @@
 aiohttp~=3.7.1
 aiohttp_apispec
+aiohttp_cors
 asyncpg~=0.22.0
 marshmallow~=3.8.0
 asyncpgsa~=0.27.1
@@ -11,5 +12,5 @@ aiomcache~=0.6.0
 aiofiles~=0.6.0
 Pillow~=8.0.1
 cmake
-face-recognition
 dlib~=19.21.1
+face-recognition

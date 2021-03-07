@@ -51,13 +51,13 @@ class PredictionHandler(BaseView):
             # /!\ Don't forget to validate your inputs /!\
             image = await reader.next()
             # TODO отвалидировать ответ
-            if not image.filename.endswith("jpg"):
-                return Response(body={"MESSAGE_NAME": "PREDICT_PHOTO",
-                                      "STATUS": False,
-                                      "PAYLOAD": {
-                                          "result": None,
-                                          "description": "wrong file format, try loading a different format"
-                                      }})
+            # if not image.filename.endswith("jpg"):
+            #     return Response(body={"MESSAGE_NAME": "PREDICT_PHOTO",
+            #                           "STATUS": False,
+            #                           "PAYLOAD": {
+            #                               "result": None,
+            #                               "description": "wrong file format, try loading a different format"
+            #                           }})
 
             arr = []
             while True:
@@ -65,7 +65,33 @@ class PredictionHandler(BaseView):
                 if not chunk:
                     break
                 arr.append(chunk)
-            img_arr = np.array(Image.open(BytesIO(b"".join(arr))))
+            try:
+                img = Image.open(BytesIO(b"".join(arr)))
+            except Exception as e:
+                logging.info("handler name - %r, message_name - %r, error - %r, info - %r",
+                             "PredictionHandler", "PREDICT_PHOTO", e, "its not image")
+
+                return Response(body={"MESSAGE_NAME": "PREDICT_PHOTO",
+                                      "STATUS": False,
+                                      "PAYLOAD": {
+                                          "result": None,
+                                          "description": "its not image"
+                                      }})
+
+            print(img.format)
+
+            if img.format == "PNG":
+                img_arr = np.array(img.convert('RGB'))
+            elif img.format == "JPEG":
+                img_arr = np.array(img)
+            else:
+                return Response(body={"MESSAGE_NAME": "PREDICT_PHOTO",
+                                      "STATUS": False,
+                                      "PAYLOAD": {
+                                          "result": None,
+                                          "description": "wrong file format, try loading a different format"
+                                      }})
+
             detected_faces = face_detector(img_arr, 1)
             if len(detected_faces) > 0:
                 # TODO используем первое попавшееся лицо в кадре(в дальнейшем нужно изменить)
@@ -79,10 +105,10 @@ class PredictionHandler(BaseView):
                         ','.join(str(s) for s in encodings[0][64:128]),
                         self.threshold,
                     ) + \
-                              "ORDER BY sqrt(power(CUBE(array[{}]) <-> vec_low, 2) + power(CUBE(array[{}]) <-> vec_high, 2)) ASC LIMIT 10".format(
-                                  ','.join(str(s) for s in encodings[0][0:64]),
-                                  ','.join(str(s) for s in encodings[0][64:128]),
-                              )
+                            "ORDER BY sqrt(power(CUBE(array[{}]) <-> vec_low, 2) + power(CUBE(array[{}]) <-> vec_high, 2)) ASC LIMIT 10".format(
+                                ','.join(str(s) for s in encodings[0][0:64]),
+                                ','.join(str(s) for s in encodings[0][64:128]),
+                            )
                     result = []
                     for row in await self.pg.fetch(query):
                         a = row['file']
