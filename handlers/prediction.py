@@ -11,6 +11,7 @@ from io import BytesIO
 
 from .base import BaseView
 from message_schema import PredictImageResp
+from localdb import uid_to_table_mapping
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -21,7 +22,7 @@ face_detector = dlib.get_frontal_face_detector()
 
 
 class PredictionHandler(BaseView):
-    URL_PATH = r'/check_similarity/{threshold}/{n}/'
+    URL_PATH = r'/check_similarity/{uid}/{threshold}/{n}/'
 
     @property
     def threshold(self):
@@ -31,34 +32,53 @@ class PredictionHandler(BaseView):
     def n(self):
         return int(self.request.match_info.get('n'))
 
+    @property
+    def uid(self):
+        return str(self.request.match_info.get('uid'))
+
     @docs(summary="Предикт по фото", tags=["Basic methods"],
           description="Классификация входящего изображения. "
                       "Выводит самые похожие фотки по евклидово расстоянию",
           parameters=[
               {
                   'in': 'path',
+                  'name': 'uid',
+                  'schema': {'type': 'string', 'format': 'uuid'},
+                  'required': 'true',
+                  'description': 'model unique id'
+              },
+              {
+                  'in': 'path',
+                  'name': 'threshold',
+                  'schema': {'type': 'string', 'format': 'uuid'},
+                  'required': 'true',
+                  'description': 'threshold'
+              },
+              {
+                  'in': 'path',
                   'name': 'n',
                   'schema': {'type': 'string', 'format': 'uuid'},
                   'required': 'true',
-                  'description': 'Кол-во наиболее близких соседей'
+                  'description': 'Number of closest neighbors'
               }
           ]
           )
     @response_schema(PredictImageResp(), description="")
     async def post(self):
         try:
+            if self.uid not in uid_to_table_mapping:
+                logging.info("handler name - %r, message_name - %r info - %r",
+                             "PredictionHandler", "PREDICT_PHOTO", "unknown uid")
+
+                return Response(body={"MESSAGE_NAME": "PREDICT_PHOTO",
+                                      "STATUS": False,
+                                      "PAYLOAD": {
+                                          "result": None,
+                                          "description": "unknown uid"
+                                      }})
             reader = await self.request.multipart()
             # /!\ Don't forget to validate your inputs /!\
             image = await reader.next()
-            # TODO отвалидировать ответ
-            # if not image.filename.endswith("jpg"):
-            #     return Response(body={"MESSAGE_NAME": "PREDICT_PHOTO",
-            #                           "STATUS": False,
-            #                           "PAYLOAD": {
-            #                               "result": None,
-            #                               "description": "wrong file format, try loading a different format"
-            #                           }})
-
             arr = []
             while True:
                 chunk = await image.read_chunk()  # 8192 bytes by default.
@@ -77,9 +97,7 @@ class PredictionHandler(BaseView):
                                           "result": None,
                                           "description": "its not image"
                                       }})
-
-            print(img.format)
-
+            # проверка типа изображения
             if img.format == "PNG":
                 img_arr = np.array(img.convert('RGB'))
             elif img.format == "JPEG":
@@ -100,7 +118,8 @@ class PredictionHandler(BaseView):
                 # threshold = 0.7
                 encodings = face_recognition.face_encodings(crop)
                 if len(encodings) > 0:
-                    query = "SELECT file FROM vectors WHERE sqrt(power(CUBE(array[{}]) <-> vec_low, 2) + power(CUBE(array[{}]) <-> vec_high, 2)) <= {} ".format(
+                    query = "SELECT file FROM {} WHERE sqrt(power(CUBE(array[{}]) <-> vec_low, 2) + power(CUBE(array[{}]) <-> vec_high, 2)) <= {} ".format(
+                        uid_to_table_mapping[self.uid],
                         ','.join(str(s) for s in encodings[0][0:64]),
                         ','.join(str(s) for s in encodings[0][64:128]),
                         self.threshold,

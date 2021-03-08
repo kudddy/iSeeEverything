@@ -9,9 +9,6 @@ from asyncpgsa.transactionmanager import ConnectionTransactionContextManager
 from sqlalchemy import Numeric, cast, func
 from sqlalchemy.sql import Select
 
-# TODO из глобальной переменной
-# with open('utils/secret.json') as json_file:
-#     data: dict = load(json_file)
 
 CENSORED = '***'
 DEFAULT_PG_URL = os.environ["PG_URL"]
@@ -36,12 +33,6 @@ async def setup_pg(app: Application) -> PG:
     )
     await app['pg'].fetchval('SELECT 1')
     log.info('Connected to database %s', DEFAULT_PG_URL)
-
-    # cursor.execute("create extension if not exists cube;")
-    # cursor.execute("drop table if exists vectors")
-    # cursor.execute("create table vectors (id serial, file varchar, date timestamp, vec_low cube, vec_high cube);")
-    # cursor.execute("create index vectors_vec_idx on vectors (vec_low, vec_high);")
-
 
     try:
         yield
