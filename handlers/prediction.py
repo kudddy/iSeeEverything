@@ -115,7 +115,6 @@ class PredictionHandler(BaseView):
                 # TODO используем первое попавшееся лицо в кадре(в дальнейшем нужно изменить)
                 face_rect = detected_faces[0]
                 crop = img_arr[face_rect.top():face_rect.bottom(), face_rect.left():face_rect.right()]
-                # threshold = 0.7
                 encodings = face_recognition.face_encodings(crop)
                 if len(encodings) > 0:
                     query = "SELECT file FROM {} WHERE sqrt(power(CUBE(array[{}]) <-> vec_low, 2) + power(CUBE(array[{}]) <-> vec_high, 2)) <= {} ".format(
@@ -124,9 +123,10 @@ class PredictionHandler(BaseView):
                         ','.join(str(s) for s in encodings[0][64:128]),
                         self.threshold,
                     ) + \
-                            "ORDER BY sqrt(power(CUBE(array[{}]) <-> vec_low, 2) + power(CUBE(array[{}]) <-> vec_high, 2)) ASC LIMIT 10".format(
+                            "ORDER BY sqrt(power(CUBE(array[{}]) <-> vec_low, 2) + power(CUBE(array[{}]) <-> vec_high, 2)) ASC LIMIT {}".format(
                                 ','.join(str(s) for s in encodings[0][0:64]),
                                 ','.join(str(s) for s in encodings[0][64:128]),
+                                self.n
                             )
                     result = []
                     for row in await self.pg.fetch(query):
@@ -170,8 +170,6 @@ class PredictionHandler(BaseView):
                         "result": None,
                         "description": "NO FACE"
                     }})
-
-                # TODO обращаемся к базе и сравниваем вектора
 
         except Exception as e:
             logging.info("handler name - %r, message_name - %r, error - %r",
