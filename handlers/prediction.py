@@ -2,7 +2,6 @@ import logging
 import face_recognition
 import numpy as np
 import dlib
-import time
 
 from aiohttp.web_response import Response
 from aiohttp_apispec import docs, response_schema
@@ -123,9 +122,7 @@ class PredictionHandler(BaseView):
                                           "description": "wrong file format, try loading a different format"
                                       }})
 
-            start_time = time.time()
             detected_faces = face_detector(img_arr, 1)
-            print("--- %s seconds ---" % (time.time() - start_time))
             if len(detected_faces) > 0:
                 # TODO используем первое попавшееся лицо в кадре(в дальнейшем нужно изменить)
                 face_rect = detected_faces[0]
