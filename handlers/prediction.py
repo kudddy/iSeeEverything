@@ -6,7 +6,7 @@ import dlib
 from aiohttp.web_response import Response
 from aiohttp_apispec import docs, response_schema
 
-from PIL import Image
+from PIL import Image, ImageOps
 from io import BytesIO
 
 from .base import BaseView
@@ -76,6 +76,7 @@ class PredictionHandler(BaseView):
                                           "result": None,
                                           "description": "unknown uid"
                                       }})
+
             reader = await self.request.multipart()
             # /!\ Don't forget to validate your inputs /!\
             image = await reader.next()
@@ -85,8 +86,18 @@ class PredictionHandler(BaseView):
                 if not chunk:
                     break
                 arr.append(chunk)
+
             try:
+                # оригинал
                 img = Image.open(BytesIO(b"".join(arr)))
+                # решение проблемы с iphone photo
+                exif = img.getexif()
+                if len(exif) > 0:
+                    img = ImageOps.exif_transpose(img)
+                    b = BytesIO()
+                    img.save(b, format="jpeg")
+                    img = Image.open(b)
+
             except Exception as e:
                 logging.info("handler name - %r, message_name - %r, error - %r, info - %r",
                              "PredictionHandler", "PREDICT_PHOTO", e, "its not image")
@@ -98,6 +109,7 @@ class PredictionHandler(BaseView):
                                           "description": "its not image"
                                       }})
             # проверка типа изображения
+
             if img.format == "PNG":
                 img_arr = np.array(img.convert('RGB'))
             elif img.format == "JPEG":
