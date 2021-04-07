@@ -20,6 +20,8 @@ log.setLevel(logging.DEBUG)
 
 face_detector = dlib.get_frontal_face_detector()
 
+size = (720, 720)
+
 
 class PredictionHandler(BaseView):
     URL_PATH = r'/check_similarity/{uid}/{threshold}/{n}/'
@@ -90,13 +92,31 @@ class PredictionHandler(BaseView):
             try:
                 # оригинал
                 img = Image.open(BytesIO(b"".join(arr)))
+
+                print(img.format)
+                if img.format == "PNG":
+                    img_frm: str = "png"
+                elif img.format == "JPEG":
+                    img_frm: str = "jpeg"
+                else:
+                    return Response(body={"MESSAGE_NAME": "PREDICT_PHOTO",
+                                          "STATUS": False,
+                                          "PAYLOAD": {
+                                              "result": None,
+                                              "description": "wrong file format, try loading a different format"
+                                          }})
+
                 # решение проблемы с iphone photo
                 exif = img.getexif()
                 if len(exif) > 0:
                     img = ImageOps.exif_transpose(img)
                     b = BytesIO()
-                    img.save(b, format="jpeg")
+                    img.save(b, format=img_frm)
                     img = Image.open(b)
+
+                # режем слишком большие изображения
+                if img.size[0] > 1000 or img.size[1] > 1000:
+                    img.thumbnail(size)
 
             except Exception as e:
                 logging.info("handler name - %r, message_name - %r, error - %r, info - %r",
@@ -121,7 +141,6 @@ class PredictionHandler(BaseView):
                                           "result": None,
                                           "description": "wrong file format, try loading a different format"
                                       }})
-
             detected_faces = face_detector(img_arr, 1)
             if len(detected_faces) > 0:
                 # TODO используем первое попавшееся лицо в кадре(в дальнейшем нужно изменить)
