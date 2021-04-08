@@ -11,9 +11,9 @@ from io import BytesIO
 
 from .base import BaseView
 from message_schema import PredictImageResp
-from localdb import uid_to_table_mapping
+from localdb import uid_to_table_mapping, model
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 log.setLevel(logging.DEBUG)
@@ -21,6 +21,8 @@ log.setLevel(logging.DEBUG)
 face_detector = dlib.get_frontal_face_detector()
 
 size = (720, 720)
+
+import time
 
 
 class PredictionHandler(BaseView):
@@ -78,7 +80,8 @@ class PredictionHandler(BaseView):
                                           "result": None,
                                           "description": "unknown uid"
                                       }})
-
+            print("---загрузка фото---")
+            start_time = time.time()
             reader = await self.request.multipart()
             # /!\ Don't forget to validate your inputs /!\
             image = await reader.next()
@@ -88,12 +91,14 @@ class PredictionHandler(BaseView):
                 if not chunk:
                     break
                 arr.append(chunk)
-
+            print("--- %s seconds ---" % (time.time() - start_time))
             try:
+                print("---Image.open---")
+                start_time = time.time()
                 # оригинал
                 img = Image.open(BytesIO(b"".join(arr)))
+                print("--- %s seconds ---" % (time.time() - start_time))
 
-                print(img.format)
                 if img.format == "PNG":
                     img_frm: str = "png"
                 elif img.format == "JPEG":
@@ -107,16 +112,29 @@ class PredictionHandler(BaseView):
                                           }})
 
                 # решение проблемы с iphone photo
+                print("---img.getexif---")
+                start_time = time.time()
                 exif = img.getexif()
+                print("--- %s seconds ---" % (time.time() - start_time))
+                print(exif)
                 if len(exif) > 0:
+                    print("---ImageOps.exif_transpose---")
+                    start_time = time.time()
                     img = ImageOps.exif_transpose(img)
+                    print("--- %s seconds ---" % (time.time() - start_time))
+                    print("---Перезапись---")
                     b = BytesIO()
                     img.save(b, format=img_frm)
                     img = Image.open(b)
+                    print("--- %s seconds ---" % (time.time() - start_time))
+
 
                 # режем слишком большие изображения
+                print("---img.thumbnail---")
+                start_time = time.time()
                 if img.size[0] > 1000 or img.size[1] > 1000:
                     img.thumbnail(size)
+                print("--- %s seconds ---" % (time.time() - start_time))
 
             except Exception as e:
                 logging.info("handler name - %r, message_name - %r, error - %r, info - %r",
@@ -129,7 +147,8 @@ class PredictionHandler(BaseView):
                                           "description": "its not image"
                                       }})
             # проверка типа изображения
-
+            print("---конвертация---")
+            start_time = time.time()
             if img.format == "PNG":
                 img_arr = np.array(img.convert('RGB'))
             elif img.format == "JPEG":
@@ -141,15 +160,32 @@ class PredictionHandler(BaseView):
                                           "result": None,
                                           "description": "wrong file format, try loading a different format"
                                       }})
+            print("--- %s seconds ---" % (time.time() - start_time))
+            print("---face_detector---")
+            start_time = time.time()
             detected_faces = face_detector(img_arr, 1)
+            print("--- %s seconds ---" % (time.time() - start_time))
             if len(detected_faces) > 0:
                 # TODO используем первое попавшееся лицо в кадре(в дальнейшем нужно изменить)
+                print("---обрезка и декодирование фото---")
+                start_time = time.time()
                 face_rect = detected_faces[0]
                 crop = img_arr[face_rect.top():face_rect.bottom(), face_rect.left():face_rect.right()]
                 encodings = face_recognition.face_encodings(crop)
+                print("--- %s seconds ---" % (time.time() - start_time))
+
+                # kmeans кластеризация призванная уменьшить время расчета евклидова расстояния
+                print("---кластеризация---")
+                start_time = time.time()
+                cluster: int = model.predict([encodings[0]])[0]
+                print("--- %s seconds ---" % (time.time() - start_time))
+
                 if len(encodings) > 0:
-                    query = "SELECT file FROM {} WHERE sqrt(power(CUBE(array[{}]) <-> vec_low, 2) + power(CUBE(array[{}]) <-> vec_high, 2)) <= {} ".format(
+                    print("---селект в базу---")
+                    start_time = time.time()
+                    query = "SELECT file FROM {} WHERE clusters = {} AND sqrt(power(CUBE(array[{}]) <-> vec_low, 2) + power(CUBE(array[{}]) <-> vec_high, 2)) <= {} ".format(
                         uid_to_table_mapping[self.uid],
+                        cluster,
                         ','.join(str(s) for s in encodings[0][0:64]),
                         ','.join(str(s) for s in encodings[0][64:128]),
                         self.threshold,
@@ -163,6 +199,7 @@ class PredictionHandler(BaseView):
                     for row in await self.pg.fetch(query):
                         a = row['file']
                         result.append(a)
+                    print("--- %s seconds ---" % (time.time() - start_time))
                     if len(result) > 0:
                         return Response(body={
                             "MESSAGE_NAME": "PREDICT_PHOTO",
