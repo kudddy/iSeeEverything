@@ -77,3 +77,8 @@ class GetCommentResp(Schema):
     PAYLOAD = Nested(
         PredictImagePayload
     )
+
+
+class AddCommentResp(Schema):
+    MESSAGE_NAME = Str()
+    STATUS = Bool()

@@ -1,7 +1,8 @@
 from .prediction import PredictionHandler
-from .comments import GetCommentHandler
+from .getcomments import GetCommentHandler
+from .addcomments import AddCommentHandler
 
 # HANDLERS = (CheckToken, CreateToken, UploadFile, PredictionHandler)
 
 
-HANDLERS = (PredictionHandler, GetCommentHandler,)
+HANDLERS = (PredictionHandler, GetCommentHandler, AddCommentHandler)

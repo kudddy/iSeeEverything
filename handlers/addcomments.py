@@ -1,10 +1,11 @@
 import logging
+from datetime import datetime
 
 from aiohttp.web_response import Response
 from aiohttp_apispec import docs, response_schema
 
 from .base import BaseView
-from message_schema import GetCommentResp
+from message_schema import AddCommentResp
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -12,8 +13,8 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 
-class GetCommentHandler(BaseView):
-    URL_PATH = r'/getcomments/'
+class AddCommentHandler(BaseView):
+    URL_PATH = r'/addcomments/'
 
     @docs(summary="Комментарии к фото", tags=["Basic methods"],
           description="Ручка возвращает ранее добавлены комментарии к фотографии",
@@ -34,18 +35,22 @@ class GetCommentHandler(BaseView):
               }
           ]
           )
-    @response_schema(GetCommentResp(), description="Возвращаем ранее добавлены комментарии к фотографии, "
-                                                   "сортированные по дате")
+    @response_schema(AddCommentResp(), description="Добавляем комментарии к фотографии")
     async def post(self):
+        res: dict = await self.request.json()
 
-        res = await self.request.json()
-        print(res)
+        payload: dict = res["PAYLOAD"]
+
         logging.info("handler name - %r, message_name - %r, info - %r",
                      "GetCommentHandler", "GET_COMMENT", "OK")
 
-        return Response(body={"MESSAGE_NAME": "GET_COMMENT",
+        # запрос к db на добавление комментария в бд(id, url фото, комментарий, дата)
+
+        query: str = "INSERT INTO comments (file, comment, date) VALUES " \
+                     "('{}','{}', '{}');".format(payload["url"], payload["comment"], datetime.now())
+
+        await self.pg.fetch(query)
+
+        return Response(body={"MESSAGE_NAME": "ADD_COMMENT",
                               "STATUS": True,
-                              "PAYLOAD": {
-                                  "result": ["Шлюха", "Ебал ее как то раз"],
-                                  "description": "OK"
-                              }})
+                              })
