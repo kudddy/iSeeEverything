@@ -93,7 +93,6 @@ class PredictionHandler(BaseView):
                 # оригинал
                 img = Image.open(BytesIO(b"".join(arr)))
 
-                print(img.format)
                 if img.format == "PNG":
                     img_frm: str = "png"
                 elif img.format == "JPEG":

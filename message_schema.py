@@ -60,3 +60,25 @@ class PredictImageResp(Schema):
     PAYLOAD = Nested(
         PredictImagePayload
     )
+
+
+class GetCommentPayloadList(Schema):
+    IMAGE_NAME = Str()
+
+
+class GetCommentPayload(Schema):
+    result = List(Nested(GetCommentPayloadList))
+    description = Str()
+
+
+class GetCommentResp(Schema):
+    MESSAGE_NAME = Str()
+    STATUS = Bool()
+    PAYLOAD = Nested(
+        PredictImagePayload
+    )
+
+
+class AddCommentResp(Schema):
+    MESSAGE_NAME = Str()
+    STATUS = Bool()
