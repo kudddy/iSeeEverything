@@ -37,7 +37,6 @@ class GetCommentHandler(BaseView):
     @response_schema(GetCommentResp(), description="Возвращаем ранее добавлены комментарии к фотографии, "
                                                    "сортированные по дате")
     async def post(self):
-        # TODO привести в порядок
         status: bool = True
         result: list = []
         try:
