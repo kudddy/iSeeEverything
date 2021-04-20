@@ -37,20 +37,30 @@ class AddCommentHandler(BaseView):
           )
     @response_schema(AddCommentResp(), description="Добавляем комментарии к фотографии")
     async def post(self):
-        res: dict = await self.request.json()
+        status: bool = True
+        try:
+            res: dict = await self.request.json()
 
-        payload: dict = res["PAYLOAD"]
+            payload: dict = res["PAYLOAD"]
 
-        logging.info("handler name - %r, message_name - %r, info - %r",
-                     "GetCommentHandler", "GET_COMMENT", "OK")
+            logging.info("handler name - %r, message_name - %r, info - %r",
+                         "AddCommentHandler", "ADD_COMMENT", "OK")
 
-        # запрос к db на добавление комментария в бд(id, url фото, комментарий, дата)
+            # запрос к db на добавление комментария в бд(id, url фото, комментарий, дата)
 
-        query: str = "INSERT INTO comments (file, comment, date) VALUES " \
-                     "('{}','{}', '{}');".format(payload["url"], payload["comment"], datetime.now())
+            query: str = "INSERT INTO comments (file, comment, date) VALUES " \
+                         "('{}','{}', '{}');".format(payload["url"], payload["comment"], datetime.now())
 
-        await self.pg.fetch(query)
+            await self.pg.fetch(query)
+
+        except Exception as e:
+            status = False
+            logging.info("handler name - %r, message_name - %r, info - %r, error - %r",
+                         "AddCommentHandler", "ADD_COMMENT", "FAIL", e)
 
         return Response(body={"MESSAGE_NAME": "ADD_COMMENT",
-                              "STATUS": True,
+                              "STATUS": status,
                               })
+
+
+

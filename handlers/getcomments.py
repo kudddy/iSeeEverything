@@ -15,7 +15,7 @@ log.setLevel(logging.DEBUG)
 class GetCommentHandler(BaseView):
     URL_PATH = r'/getcomments/'
 
-    @docs(summary="Комментарии к фото", tags=["Basic methods"],
+    @docs(summary="Возвращает Комментарии к фото", tags=["Basic methods"],
           description="Ручка возвращает ранее добавлены комментарии к фотографии",
           parameters=[
               {
@@ -27,8 +27,8 @@ class GetCommentHandler(BaseView):
               },
               {
                   'in': 'json',
-                  'name': 'url',
-                  'schema': {'type': 'string', 'format': 'uuid'},
+                  'name': 'PAYLOAD',
+                  'schema': {'type': 'dict', 'format': 'url:url'},
                   'required': 'true',
                   'description': 'url to photo'
               }
@@ -38,20 +38,27 @@ class GetCommentHandler(BaseView):
                                                    "сортированные по дате")
     async def post(self):
         # TODO привести в порядок
-        res: dict = await self.request.json()
-        payload: dict = res["PAYLOAD"]
-        logging.info("handler name - %r, message_name - %r, info - %r",
-                     "GetCommentHandler", "GET_COMMENT", "OK")
+        status: bool = True
+        result: list = []
+        try:
+            res: dict = await self.request.json()
+            payload: dict = res["PAYLOAD"]
 
-        query: str = "select comment from comments where file = '{}'".format(payload["url"])
+            query: str = "select comment from comments where file = '{}'".format(payload["url"])
 
-        result = []
-        for row in await self.pg.fetch(query):
-            a = row['comment']
-            result.append(a)
+            for row in await self.pg.fetch(query):
+                result.append(row['comment'])
+
+            logging.info("handler name - %r, message_name - %r, info - %r",
+                         "GetCommentHandler", "GET_COMMENT", "OK")
+
+        except Exception as e:
+            status = False
+            logging.info("handler name - %r, message_name - %r, info - %r, error - %r",
+                         "GetCommentHandler", "GET_COMMENT", "FAIL", e)
 
         return Response(body={"MESSAGE_NAME": "GET_COMMENT",
-                              "STATUS": True,
+                              "STATUS": status,
                               "PAYLOAD": {
                                   "result": result,
                                   "description": "OK"
