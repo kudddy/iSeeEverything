@@ -49,7 +49,7 @@ class AddCommentHandler(BaseView):
 
             # запрос к db на добавление комментария в бд(id, url фото, комментарий, дата)
 
-            query = comments.insert().valuest(file=payload["url"], comment=payload["comment"], date=datetime.now())
+            query = comments.insert().values(file=payload["url"], comment=payload["comment"], date=datetime.now())
 
             await self.pg.fetch(query)
 
