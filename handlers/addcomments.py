@@ -49,7 +49,11 @@ class AddCommentHandler(BaseView):
 
             # запрос к db на добавление комментария в бд(id, url фото, комментарий, дата)
 
-            query = comments.insert().values(file=payload["url"], comment=payload["comment"], date=datetime.now())
+            query = comments.insert().values(
+                file=payload["url"],
+                comment=payload["comment"],
+                date=datetime.now()
+            )
 
             await self.pg.fetch(query)
 
@@ -58,9 +62,10 @@ class AddCommentHandler(BaseView):
             logging.info("handler name - %r, message_name - %r, info - %r, error - %r",
                          "AddCommentHandler", "ADD_COMMENT", "FAIL", e)
 
-        return Response(body={"MESSAGE_NAME": "ADD_COMMENT",
-                              "STATUS": status,
-                              })
+        return Response(body={
+            "MESSAGE_NAME": "ADD_COMMENT",
+            "STATUS": status
+        })
 
 
 
