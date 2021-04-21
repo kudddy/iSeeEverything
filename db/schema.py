@@ -30,6 +30,17 @@ class CUBE(UserDefinedType):
         return "CUBE"
 
 
+comments = Table(
+    'comments',
+    metadata,
+    Column('id', Integer, primary_key=True),
+    Column('file', String),
+    Column('comment', String),
+    Column('date', Date)
+)
+
+
+
 # all_tokens = Table(
 #     'tokens',
 #     metadata,

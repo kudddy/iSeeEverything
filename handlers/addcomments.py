@@ -3,6 +3,7 @@ from datetime import datetime
 
 from aiohttp.web_response import Response
 from aiohttp_apispec import docs, response_schema
+from db.schema import comments
 
 from .base import BaseView
 from message_schema import AddCommentResp
@@ -48,8 +49,7 @@ class AddCommentHandler(BaseView):
 
             # запрос к db на добавление комментария в бд(id, url фото, комментарий, дата)
 
-            query: str = "INSERT INTO comments (file, comment, date) VALUES " \
-                         "('{}','{}', '{}');".format(payload["url"], payload["comment"], datetime.now())
+            query = comments.insert().valuest(file=payload["url"], comment=payload["comment"], date=datetime.now())
 
             await self.pg.fetch(query)
 

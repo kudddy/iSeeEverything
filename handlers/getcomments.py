@@ -2,6 +2,8 @@ import logging
 
 from aiohttp.web_response import Response
 from aiohttp_apispec import docs, response_schema
+from sqlalchemy import select
+from db.schema import comments
 
 from .base import BaseView
 from message_schema import GetCommentResp
@@ -43,8 +45,7 @@ class GetCommentHandler(BaseView):
             res: dict = await self.request.json()
             payload: dict = res["PAYLOAD"]
 
-            query: str = "select comment from comments where file = '{}'".format(payload["url"])
-
+            query = select([comments.c.comment]).where(comments.c.file == payload["url"])
             for row in await self.pg.fetch(query):
                 result.append(row['comment'])
 
