@@ -50,7 +50,7 @@ def create_app() -> Application:
 
         app['aiohttp_cors'].add(route)
 
-    setup_aiohttp_apispec(app=app, title="GROUP BY FACE API", swagger_path='/')
+    setup_aiohttp_apispec(app=app, title="I SEE YOU API", swagger_path='/')
 
     # Автоматическая сериализация в json данных в HTTP ответах
     PAYLOAD_REGISTRY.register(AsyncGenJSONListPayload,
