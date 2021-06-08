@@ -39,6 +39,14 @@ comments = Table(
     Column('date', Date)
 )
 
+feedback = Table(
+    'feedback',
+    metadata,
+    Column('id', Integer, primary_key=True),
+    Column('comment', String),
+    Column('date', Date)
+
+)
 
 
 # all_tokens = Table(
