@@ -2,7 +2,7 @@ import logging
 
 from aiohttp.web_response import Response
 from aiohttp_apispec import docs, response_schema
-from sqlalchemy import select
+from sqlalchemy import select, desc
 from db.schema import feedback
 
 from .base import BaseView
@@ -42,21 +42,19 @@ class GetFeedBackHandler(BaseView):
         status: bool = True
         result: list = []
         try:
-            query = select([feedback.c.comment])
+            query = select([feedback.c.comment]).order_by(desc(feedback.c.date))
             for row in await self.pg.fetch(query):
                 result.append(row['comment'])
 
             logging.info("handler name - %r, message_name - %r, info - %r",
                          "GetCommentHandler", "GET_FEEDBACK", "OK")
-
         except Exception as e:
             status = False
             logging.info("handler name - %r, message_name - %r, info - %r, error - %r",
                          "GetCommentHandler", "GET_FEEDBACK", "FAIL", e)
-
         return Response(body={"MESSAGE_NAME": "GET_FEEDBACK",
                               "STATUS": status,
                               "PAYLOAD": {
-                                  "result": result[:15],
+                                  "result": result[:8],
                                   "description": "OK"
                               }})
