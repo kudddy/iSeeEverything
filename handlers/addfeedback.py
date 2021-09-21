@@ -44,8 +44,6 @@ class AddFeedbackHandler(BaseView):
 
             payload: dict = res["PAYLOAD"]
 
-
-
             # запрос к db на добавление комментария в бд(id, url фото, комментарий, дата)
 
             query = feedback.insert().values(
@@ -67,6 +65,3 @@ class AddFeedbackHandler(BaseView):
             "MESSAGE_NAME": "ADD_FEEDBACK",
             "STATUS": status
         })
-
-
-
