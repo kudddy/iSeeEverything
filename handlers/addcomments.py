@@ -44,9 +44,6 @@ class AddCommentHandler(BaseView):
 
             payload: dict = res["PAYLOAD"]
 
-            logging.info("handler name - %r, message_name - %r, info - %r",
-                         "AddCommentHandler", "ADD_COMMENT", "OK")
-
             # запрос к db на добавление комментария в бд(id, url фото, комментарий, дата)
 
             query = comments.insert().values(
@@ -56,6 +53,9 @@ class AddCommentHandler(BaseView):
             )
 
             await self.pg.fetch(query)
+
+            logging.info("handler name - %r, message_name - %r, info - %r",
+                         "AddCommentHandler", "ADD_COMMENT", "OK")
 
         except Exception as e:
             status = False
